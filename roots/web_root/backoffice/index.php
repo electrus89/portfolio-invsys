@@ -1,4 +1,6 @@
-<html>
+<php
+include "../../../application/config.phdp" or die "Can't find config";
+?><html>
         <head>
                 <title>$$$ - Inventory System</title>
 		<link rel="stylesheet" href="style.php" type="text/css"></style>
