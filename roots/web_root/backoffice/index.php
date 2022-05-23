@@ -1,7 +1,7 @@
 <html>
         <head>
                 <title>$$$ - Inventory System</title>
-		<link rel="stylesheet" ref="style.php"></style>
+		<link rel="stylesheet" href="style.php" type="text/css"></style>
         </head>
         <body>
 		<div id="heading">
