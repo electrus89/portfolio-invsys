@@ -13,7 +13,8 @@
 		<div id="page">
 			<div class="ui-fade" id="uif-h"></div>
 			<div id="content">
-			Sample Content
+				<h1>test</h1>
+				<div>test</div>
 			</div>
 			<div class="ui-fade" id="uif-f"></div>
 		</div>
