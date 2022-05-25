@@ -1,4 +1,6 @@
-CREATE DATABASE inventoryserver;
+CREATE DATABASE invsys;
+CREATE USER 'invsys'@'localhost' IDENTIFIED BY 'password';
+
 CREATE TABLE items (
 	ID		INT AUTO_INCREMENT PRIMARY KEY,
 	ShortName	VARCHAR(255),
@@ -8,7 +10,8 @@ CREATE TABLE assignments (
 	ID		INT AUTO_INCREMENT PRIMARY KEY,
 	ItemID		INT,
 	AssignedTo	INT,
-	AssignedBy	INT
+	AssignedBy	INT,
+	Status		INT
 )
 CREATE TABLE entities (
 	ID		INT AUTO_INCREMENT PRIMARY KEY,
@@ -24,7 +27,8 @@ CREATE TABLE entity_to_user (
 CREATE TABLE credentials (
 	ID		INT AUTO_INCREMENT PRIMARY KEY,
 	UserID		INT,
-	Password	VARCHAR(255)
+	Credential	VARCHAR(255)
+	CredType INT
 )
 CREATE TABLE entity_relationships (
 	ID		INT AUTO_INCREMENT PRIMARY KEY,
