@@ -18,8 +18,8 @@ $colorway_kiosk = Colorways::$Orange;
 //		Database Driver selection.
 // $db->Connect ( <location of server>, <username>, <password> )
 //		Database Connection configuration.
-$db = new DefaultSQLDriver();
-$db->Connect("localhost", "invsys", "password");
+$db = new MySQLDriver();
+$db->Connect("unix://var/run/mysqld/mysqld.sock", "invsys", "password");
 
 // $passseed = Password Seed for Salts of Passwords in the Database [Salts are per-EntityID]
 // $passul = Upper limit value for salts, after which it wraps around.
