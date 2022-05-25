@@ -1,0 +1,11 @@
+INSERT INTO entities (FullName,Description,Classification) VALUES("Sample","Sample User",0);
+INSERT INTO entities (FullName,Description,Classification) VALUES("Sample Team","Sample Team",1);
+INSERT INTO entities (FullName,Description,Classification) VALUES("Sample Project","Sample Project", 2);
+INSERT INTO entity_relationships (EntityMaster,EntitySub,Relationship) VALUES (3,2,1);
+INSERT INTO entity_relationships (EntityMaster,EntitySub,Relationship) VALUES (2,1,1);
+INSERT INTO entity_to_user (EntityID,Username) VALUES(1,"sample");
+INSERT INTO credentials (UserID,Credential,CredType) VALUES(1,PASSWORD("12093809#password"),0);
+INSERT INTO items (ShortName,Description) VALUES("Hairbrush", "A simple hairbrush that gets lost....");
+INSERT INTO items (ShortName,Description) VALUES("Hair", "...Why?");
+INSERT INTO assignments (ItemID,AssignedTo,AssignedBy,Status) VALUES (1,1,1,0);
+INSERT INTO assignments (ItemID,AssignedTo,AssignedBy,Status) VALUES (2,3,1,1);
