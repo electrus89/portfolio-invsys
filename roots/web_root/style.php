@@ -5,8 +5,8 @@ require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view.php";
 
 header("Content-Type: text/css");
 
-// Tell the GUI that it's generating a Stylesheet for the backoffice.
-$gui = new GUI($colorway_backoffice,"css");
+// Tell the GUI that it's generating a Stylesheet for the kiosk.
+$gui = new GUI($colorway_kiosk,"css");
 
 echo $gui -> getUIStylesheet();
 ?>
