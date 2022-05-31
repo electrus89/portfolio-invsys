@@ -1,8 +1,8 @@
 <?php
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../../conf/app.conf.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view.php";
-//require "../../application/controller.php";
-//require "../../application/model.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/model.php";
 //require "../../application/core.php";
 
 // Tell the GUI it's creating a kiosk HTML page.
