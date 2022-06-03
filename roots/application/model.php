@@ -10,9 +10,9 @@
 
 // Relies on the controller system to be present: The controller contains the 
 //   database interface.
-
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
 
+/*
 // This will import any data object from the database.
 trait ImportableFromDatabase {
 	function __construct(Array $result)
@@ -55,14 +55,14 @@ class DMItem {
 		}
 	}
 }
-
+*/
 class DMAssignment {
-	use ImportableFromDatabase;
+	//use ImportableFromDatabase;
 	
 	const STATUS_CHECKEDOUT = 1;
 	const STATUS_RETURNED = 0;
 	const STATUS_INVALID = 65536;
-	
+	/*
 	var $ID = -1;
 	var $ItemID = -1;
 	var $AssignedTo = -1;
@@ -91,17 +91,17 @@ class DMAssignment {
 		} else {
 			// Well, we overlooked something.
 		}
-	}
+	}*/
 }
 
 class DMEntity {
-	use ImportableFromDatabase;
+	//use ImportableFromDatabase;
 	
 	const CLASSIFICATION_PERSON = 0;
 	const CLASSIFICATION_TEAM = 1;
 	const CLASSIFICATION_PROJECT = 2;
 	const CLASSIFICATION_INVALID = 65536;
-	
+	/*
 	var $ID = -1;
 	var $FullName = ""; // Clippy McClipface was here, but that affected execution.
 	var $Description = "";
@@ -129,10 +129,11 @@ class DMEntity {
 			// Well, we overlooked something.
 		}
 	}
+*/
 }
-
+/*
 class DMEntityToUserRel {
-	use ImportableFromDatabase;
+	//use ImportableFromDatabase;
 	
 	var $ID = -1;
 	var $EntityID = -1;
@@ -155,17 +156,20 @@ class DMEntityToUserRel {
 			$db->InsertIntoTable("entity_to_user", array("EntityID" => $this->EntityID,
 														 "Username" => "'{$this->Username}'"));
 		} else {
-			// Well, we overlooked something.
+			$db->UpdateTable("credentials", array("EntityMaster" => $this->EntityMaster,
+												  "EntitySub" => $this->EntitySub,
+												  "Relationship" => $this->Relationship),
+										   array("ID" => $this->ID));
 		}
 	}
 }
-
+*/
 class DMCredentials {
-	use ImportableFromDatabase;
+//	use ImportableFromDatabase;
 	
 	const CREDTYPE_PASSWORD = 0;
 	const CREDTYPE_INVALID = 65536;
-	
+/*	
 	var $ID = -1;
 	var $UserID = -1;
 	var $Credential = "";
@@ -182,6 +186,7 @@ class DMCredentials {
 
 	function pushToDatabase()
 	{
+		// FIXME: This will resalt and rehash the salted/hashed password. 
 		global $db, $passseed, $passul;
 		$salt = ($this->UserID * $passseed) % $passul;
 		
@@ -191,19 +196,23 @@ class DMCredentials {
 													  "Credential" => ( ($this->CredType == DMCredentials::CREDTYPE_PASSWORD) ? "PASSWORD('{$salt}#{$this->Credential}')" : "'{$this->Credential}'"),
 													  "CredType" => $this->CredType));
 		} else {
-			// Well, we overlooked something.
+			$db->UpdateTable("credentials", array("UserID" => $this->UserID,
+													  "Credential" => ( ($this->CredType == DMCredentials::CREDTYPE_PASSWORD) ? "PASSWORD('{$salt}#{$this->Credential}')" : "'{$this->Credential}'"),
+													  "CredType" => $this->CredType),
+										   array("ID" => $this->ID));
 		}
 	}
+*/
 }
 
 class DMEntityRelationship {
-	use ImportableFromDatabase;
+//	use ImportableFromDatabase;
 	
 	const REL_MEMBER = 0;
 	const REL_LEADER = 1;
 	const REL_INVALID = 65536;
 	
-	var $ID = -1;
+/*	var $ID = -1;
 	var $EntityMaster = -1;
 	var $EntitySub = -1;
 	var $Relationship = DMEntityRelationship::REL_INVALID;
@@ -227,8 +236,144 @@ class DMEntityRelationship {
 													  "EntitySub" => $this->EntitySub,
 													  "Relationship" => $this->Relationship));
 		} else {
-			// Well, we overlooked something.
+			$db->UpdateTable("credentials",array("EntityMaster" => $this->EntityMaster,
+												 "EntitySub" => $this->EntitySub,
+												 "Relationship" => $this->Relationship),
+										   array("ID" => $this->ID));
 		}
+	}
+*/
+}
+
+class DataModel
+{
+	// authenticate_entity(<username>, array("type" => DMCredentials::<constant>, "data" => <credential_data>))
+	static function authenticate_entity($username, $credential) : ?Array
+	{
+		global $db;
+		
+		// Does a user have both an credential of a matching type and a matching username?
+		$r1 = $db->SelectFromMultipleTables( array(	"entity_to_user" => array(),
+													"credentials" => array("UserID")),
+											 array( "entity_to_user.ID" => "credentials.UserID"),
+											 array( "entity_to_user.Username = \"{$username}\"",
+													"credentials.CredType = {$credential['type']}"));
+		
+		if ($r1 == null) return null; // If there's an issue, return a negative result, meaning login failure.
+		
+		$serializer = "";
+		// Form the serializer for the credential.
+		// The serializer ensures the search for the credential matches what is on the server.
+		switch ($credential["type"])
+		{
+			case DMCredentials::CREDTYPE_PASSWORD:
+				$salt = (String)(DMSecurity::CalculatePWSalt((int)($r1["data"][0]["UserID"]))); // Calculate the Salt, then cast it to a String.
+				$serializer = "PASSWORD('{$salt}#{$credential['data']}')";
+		}
+		
+		$r2 = $db->SelectFromMultipleTables(array( "entity_to_user" => array("ID", "EntityID", "Username"), // Select the five relevant fields in three tables...
+											 "credentials" => array(),
+											 "entities" => array()),								  // No fields selected but we should still INNER JOIN this one.
+									  array( "entities.ID" => "entity_to_user.EntityID",			  // Two primary keys bind these three tables.
+									         "entity_to_user.ID" => "credentials.UserID"),
+									  array("entity_to_user.Username = \"{$username}\"",
+										    "credentials.Credential = {$serializer}",
+											"credentials.CredType = {$credential['type']}"));		
+		if ($r2 == null) return null; // If there's an issue, return a negative result, meaning login failure.
+		return array( "EntityID" => $r2["data"][0]["EntityID"],
+					  "Username" => $r2["data"][0]["Username"],
+					  "UserID" =>   $r2["data"][0]["ID"] );
+	}
+	static function checkout_item($username, $credential, $entitytoid, $itemid) : ?Array
+	{
+	}
+
+	static function list_entities_by_classification() : ?Array
+	{
+		global $db;
+		$entities = array("persons" => array(), "teams" => array(), "projects" => array());
+		$r1 = $db->SelectFromTable("entities",array("ID","FullName","Classification"));
+		if ($r1 == null) return null;
+		foreach ($r1["data"] as $datarow)
+		{
+			switch ($datarow["Classification"])
+			{
+				case DMEntity::CLASSIFICATION_PERSON:	$entities["persons"][] = array ("ID" => $datarow["ID"], "FullName" => $datarow["FullName"]);
+														break;
+				case DMEntity::CLASSIFICATION_PROJECT:	$entities["projects"][] = array ("ID" => $datarow["ID"], "FullName" => $datarow["FullName"]);
+														break;
+				case DMEntity::CLASSIFICATION_TEAM: 	$entities["teams"][] = array ("ID" => $datarow["ID"], "FullName" => $datarow["FullName"]);
+														break;
+			}
+		}
+		return $entities;
+	}
+	static function list_items(?bool $is_checked_out) : ?Array
+	{
+		global $db;
+		
+		if ($is_checked_out === null)
+		{
+			$r1 = $db->SelectFromTable("items",array("ID","ShortName"));
+			if ($r1 == null) return null;
+			return $r1["data"];
+		} else {
+			// TODO: Perhaps a better DB driver object, for readability...
+			
+			$coval = ($is_checked_out) ? DMAssignment::STATUS_CHECKEDOUT : DMAssignment::STATUS_RETURNED;
+			
+			$r1 = $db->SelectFromTable("audit_entries",array("ItemID", "max(AssignedWhen) as LastAssigned"),array(),"","ItemID");
+			//var_dump ($r1);
+			if ($r1 == null) return null;			
+
+			// Pretend result that merges everything.
+			$rx = array("query" => "",
+						"columns" => array("ID", "ShortName"),
+						"data" => array());
+
+			foreach ($r1["data"] as $datarow)
+			{
+				$r2 = $db->SelectFromMultipleTables( array(
+														"audit_entries" => array(
+															"AssignedWhen",
+															"AssignedBy",
+															"AssignedTo"
+														),		
+ 													    "items" => array(
+															"ID",
+															"ShortName"
+														)
+													),
+													array (
+														"items.ID" => "audit_entries.ItemID"
+													),
+													array (
+														"items.ID = {$datarow['ItemID']}",
+														"audit_entries.AssignedWhen={$datarow['LastAssigned']}",
+														"audit_entries.NewStatus={$coval}"
+													)
+				);
+				//var_dump($r2);
+				if ($r2 == null) return null;
+				$rx["query"] .= "{$r2['query']};\n";
+				if (count($r2["data"]) == 0) continue;
+				$rx["data"][] = $r2["data"][0];
+			}
+			//var_dump($rx);
+			return $rx["data"];
+		}
+	}
+	function get_entity_name($entityid)
+	{
+	}
+}
+
+class DMSecurity
+{
+	static function CalculatePWSalt($UserID) : int
+	{
+		global $passul, $passseed;
+	    return ($UserID * $passseed) % $passul;
 	}
 }
 ?>

@@ -7,5 +7,5 @@ INSERT INTO entity_to_user (EntityID,Username) VALUES(1,"sample");
 INSERT INTO credentials (UserID,Credential,CredType) VALUES(1,PASSWORD("12093809#password"),0);
 INSERT INTO items (ShortName,Description) VALUES("Hairbrush", "A simple hairbrush that gets lost....");
 INSERT INTO items (ShortName,Description) VALUES("Hair", "...Why?");
-INSERT INTO assignments (ItemID,AssignedTo,AssignedBy,Status) VALUES (1,1,1,0);
-INSERT INTO assignments (ItemID,AssignedTo,AssignedBy,Status) VALUES (2,3,1,1);
+INSERT INTO audit_entries (ItemID,AssignedWhen,AssignedTo,AssignedBy,NewStatus) VALUES (1,0,1,1,0);
+INSERT INTO audit_entries (ItemID,AssignedWhen,AssignedTo,AssignedBy,NewStatus) VALUES (2,0,3,1,1);

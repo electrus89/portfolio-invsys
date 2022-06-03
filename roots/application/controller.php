@@ -10,7 +10,7 @@
 // Basic model for the Database Driver, present so the application can adapt to other database servers.
 interface DatabaseDriver {
 	// SelectFromTable ( <table name>, array ( <field1>, ... , <fieldn> ), ( <limit: eg "ID = 1">, ..., <limit>), <Starting result, like 0>, <Result count, like 10>) -> success?
-	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), Int $Start = -1, Int $NumResults = -1): ?Array;
+	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), String $orderby ="", String $groupby = "", Int $Start = -1, Int $NumResults = -1): ?Array;
 	// InsertIntoTable ( <table name>, array ( <key1> => <value1>,
 	//										   ...,
 	//										   <keyn> => <valuen>) -> success?
@@ -20,15 +20,18 @@ interface DatabaseDriver {
 	//							  array( <tablespec> => array( <fieldspec>, ..., <fieldspec>), array ( <primarykey> => <fieldinothertable>,
 	//																						           ...,
 	//																								   <primarykey> => <fieldinothertable>), array(<limit>,...), <starting_result>, <resultcount>)
-	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), Int $Start = -1, Int $NumResults = -1) : ?Array;
+	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), String $orderby ="", String $groupby = "", Int $Start = -1, Int $NumResults = -1) : ?Array;
+	
+	// UpdateTable(<table name>, array(<setvar> => <setval>, ..., <setvar> => <setval>), array(<limit>,...))
+	function UpdateTable(String $table, Array $sets, Array $limits = array()) : bool;
 }
 
 // Dummy, Default Driver.
 class DefaultSQLDriver implements DatabaseDriver {
 
-	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), Int $Start = -1, Int $NumResults = -1): ?Array
+	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), String $orderby ="",  String $groupby = "", Int $Start = -1, Int $NumResults = -1): ?Array
 	{
-		return false;
+		return null;
 	}
 	
 	function InsertIntoTable(String $table, Array $fieldsvalues) : bool
@@ -36,7 +39,12 @@ class DefaultSQLDriver implements DatabaseDriver {
 		return false;
 	}
 
-	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), Int $Start = -1, Int $NumResults = -1) : ?Array
+	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), String $orderby ="", String $groupby = "", Int $Start = -1, Int $NumResults = -1) : ?Array
+	{
+		return null;
+	}
+	
+	function UpdateTable(String $table, Array $sets, Array $limits = array()) : bool
 	{
 		return false;
 	}
@@ -68,13 +76,15 @@ class MySQLDriver implements DatabaseDriver {
 		}
 	}
 	
-	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), Int $Start = -1, Int $NumResults = -1): ?Array
+	function SelectFromTable(String $table, $fields = array(), Array $limits = array(), String $orderby ="",String $groupby = "", Int $Start = -1, Int $NumResults = -1): ?Array
 	{
-		$qfields = ( ($fields === array()) ? implode(",",$fields) : "*" );
-		$qlimits = ( ($limits === array()) ? "" : ("WHERE ".implode(",",$limits)));
+		$qfields = (is_array($fields)) ? implode(",",$fields) : "*" ;
+		$qlimits = ( ($limits === array()) ? "" : ("WHERE ".implode(" AND ",$limits)));
 		$qrange = ( (($Start === $NumResults) && ($Start === -1)) ? "" : "LIMIT {$Start},".($Start+$NumResults));
-
-		$result = $this->innerMysqli->query($q = "SELECT {$qfields} FROM {$table} {$qlimits} {$qrange}");
+		$qgroupby = ($groupby === "") ? "" : "GROUP BY {$groupby}";
+		$qorderby = ($orderby === "") ? "" : "ORDER BY {$orderby}";
+		
+		$result = $this->innerMysqli->query($q = "SELECT {$qfields} FROM {$table} {$qlimits} {$qrange} {$qgroupby}");
 		
 		// Let everyone know if this went wrong.
 		if ($this->innerMysqli->errno != 0) return null;
@@ -111,12 +121,14 @@ class MySQLDriver implements DatabaseDriver {
 		return ($this->innerMysqli->errno == 0);
 	}
 	
-	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), Int $Start = -1, Int $NumResults = -1) : ?Array
+	function SelectFromMultipleTables(Array $fieldspec, Array $keyequiv, Array $limits = array(), String $orderby ="", String $groupby = "", Int $Start = -1, Int $NumResults = -1) : ?Array
 	{
-		$qlimits = ( ($limits === array()) ? "" : ("WHERE ".implode(",",$limits)));
+		$qlimits = ( ($limits === array()) ? "" : ("WHERE ".implode(" AND ",$limits)));
 		$qrange = ( (($Start === $NumResults) && ($Start === -1)) ? "" : "LIMIT {$Start},".($Start+$NumResults));
 		$qtables = implode(" INNER JOIN ",array_keys($fieldspec));
-		
+		$qgroupby = ($groupby === "") ? "" : "GROUP BY {$groupby}";
+		$qorderby = ($orderby === "") ? "" : "ORDER BY {$orderby}";
+
 		$equiv = array();
 		
 		foreach ($keyequiv as $prikey => $keyref)
@@ -136,7 +148,7 @@ class MySQLDriver implements DatabaseDriver {
 		}
 		$qfields = implode(",",$fields);
 
-		$result = $this->innerMysqli->query($q = "SELECT {$qfields} FROM {$qtables} ON {$qequiv} {$qlimits} {$qrange}");
+		$result = $this->innerMysqli->query($q = "SELECT {$qfields} FROM {$qtables} ON {$qequiv} {$qlimits} {$qrange} {$qorderby} {$qgroupby}");
 		
 		// Let everyone know if this went wrong.
 		if ($this->innerMysqli->errno != 0) return null;
@@ -157,6 +169,20 @@ class MySQLDriver implements DatabaseDriver {
 						"columns"=> $columns,
 						"data"=> $assocdata
 					);
+	}
+	function UpdateTable(String $table, Array $sets, Array $limits = array()) : bool
+	{
+		$qlimits = ( ($limits === array()) ? "" : (" WHERE ".implode(" AND ",$limits)));
+		$setarr = array();
+		foreach ($sets as $afield => $aval)
+		{
+			$setarr[] = "{$afield} = {$aval}";
+		}
+		$qset = implode(",",$setarr);
+		$this->innerMysqli->query($q = "UPDATE {$table} SET {$qset}{$qlimits}");
+		
+		// Let everyone know if this went wrong.
+		return ($this->innerMysqli->errno == 0);
 	}
 }
 

@@ -167,7 +167,7 @@ EOT;
 	{
 		return <<<EOT
 div#heading { background: {$this->parent_gui->colorway_array[CW_HEADBG]} ; padding: 2px 0px 2px 0px; height: 34px; }
-div#heading img#logo { height: 32px; width: 32px; background: red; position: relative; bottom: -2px; left: 2px; }
+div#heading img#logo { height: 32px; width: 128px; background: red; position: relative; bottom: -2px; left: 2px; }
 div#heading ul#menu { display: inline; padding: 0px; }
 div#heading ul#menu li { display: inline; margin: 0px;}
 div#heading ul#menu li a { color: {$this->parent_gui->colorway_array[CW_HEADFG]}; text-decoration: none; font-family: sans-serif; padding: 4px; position: relative; bottom: 4px; }
