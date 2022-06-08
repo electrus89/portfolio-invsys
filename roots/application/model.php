@@ -290,11 +290,14 @@ class DataModel
 
 	static function list_entities_by_classification() : ?Array
 	{
-		global $db;
+		global $db;		
 		$entities = array("persons" => array(), "teams" => array(), "projects" => array());
-		$r1 = $db->SelectFromTable("entities",array("ID","FullName","Classification"));
-		if ($r1 == null) return null;
-		foreach ($r1["data"] as $datarow)
+		$q = new SelectQuery;
+		$q->fields = array("ID","FullName","Classification");
+		$q->tables = array("entities");
+		$r = $db->Select($q);
+		if (!$r->success) return null;
+		foreach ($r->data as $datarow)
 		{
 			switch ($datarow["Classification"])
 			{
@@ -345,6 +348,7 @@ class DataModel
 				$q2->keyrelationships = array("items.ID" => "audit_entries.ItemID");
 				$q2->where = array("items.ID = {$datarow['ItemID']}", "audit_entries.AssignedWhen={$datarow['LastAssigned']}", "audit_entries.NewStatus={$coval}");
 				$r2 = $db->Select($q2);
+				//var_dump((String)$q2);
 				if ($r2->success == false){
 					return null;
 				}	

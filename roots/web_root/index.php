@@ -1,7 +1,7 @@
 <?php
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../../conf/app.conf.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view.php";
-require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller2.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/model.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view/kiosk.php";
 //require "../../application/core.php";

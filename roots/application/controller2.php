@@ -54,7 +54,11 @@ class SelectQuery
 			$where = "";
 		}
 		if (count($this->keyrelationships) > 0) {
-			$keyrel = " ON ".implode(" AND ", $this->keyrelationships);
+			$reltemp = array();
+			foreach ($this->keyrelationships as $key => $fld)
+				$reltemp[] = "$key = $fld";
+			
+			$keyrel = " ON ".implode(" AND ", $reltemp);
 		} else {
 			$keyrel = "";
 		}
