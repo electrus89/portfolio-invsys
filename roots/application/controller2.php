@@ -24,7 +24,8 @@ class SelectQuery
 	public $groupby = array("field"=>"");
 	public $where = array();
 	public $limit = array("offset" => 0,
-						  "quantity" => 0);
+						  "quantity" => -1);
+	public $keyrelationships = array();
 						  
 	public function __toString()
 	{
@@ -37,13 +38,28 @@ class SelectQuery
 		} else {
 			$orderby = " ORDER BY {$this->orderby['field']} {$this->orderby['direction']}";
 		}
-		$limit = " LIMIT {$this->limit['quantity']}, {$this->limit['offset']}";
+		if ($this->groupby["field"] === "") {
+			$groupby = "";
+		} else {
+			$groupby = " GROUP BY {$this->groupby['field']}";
+		}
+		if ($this->limit["quantity"] > -1) {
+			$limit = " LIMIT {$this->limit['quantity']} OFFSET {$this->limit['offset']}";
+		} else {
+			$limit = "";
+		}
 		if (count($this->where) != 0) {
 			$where = " WHERE ".implode(" AND ", $this->where);
 		} else {
 			$where = "";
 		}
-		return "SELECT {$fields} FROM {$tables}{$where}{$orderby}{$limit}"; 
+		if (count($this->keyrelationships) > 0) {
+			$keyrel = " ON ".implode(" AND ", $this->keyrelationships);
+		} else {
+			$keyrel = "";
+		}
+		
+		return "SELECT {$fields} FROM {$tables}{$keyrel}{$where}{$groupby}{$orderby}{$limit}"; 
 	}
 }
 
@@ -54,7 +70,7 @@ class MySQLDatabase extends Database
 	// This handles connecting to the database server.
 	function __construct(Array $config)
 	{
-		if (array_key_exists("mysql", $config)
+		if (array_key_exists("mysql", $config))
 		{
 			switch ($config["mysql"]["conntype"])
 			{
@@ -70,31 +86,18 @@ class MySQLDatabase extends Database
 	
     function Select(SelectQuery $query) : QueryResult
 	{
-		/*
-		$result = $this->innerMysqli->query($q = "SELECT {$qfields} FROM {$table} {$qlimits} {$qrange} {$qgroupby}");
-		
-		// Let everyone know if this went wrong.
-		if ($this->innerMysqli->errno != 0) return null;
-		
-		$columns = array();
-		
-		$assocdata = $result->fetch_all(MYSQLI_ASSOC);
-		if (($qfields == "*") && ($assocdata !== array()))
-		{
-			// If we chose all fields, we don't have a handy list already...
-			$columns = array_keys($assocdata[0]);
-		} elseif ($qfields == "*") {
-			// Welp. We tried.
-			$columns = array("NODATA");
-		} else {
-			// Oh! We have a list already. Let's use that...
-			$columns = $fields;
+		$result = $this->conn->query($query);
+		$rtn = new QueryResult;
+		if ($this->conn->errno != 0) {
+			//echo"<pre>";var_dump((String)$query);var_dump($rtn);echo"</pre>";
+			return $rtn;
 		}
-		return array (
-						"query" => $q,
-						"columns" => $columns,
-						"data" => $assocdata
-					);*/
+		$rtn->success = true;
+		$rtn->query = (String)$query;
+		$rtn->data = $result->fetch_all(MYSQLI_ASSOC);
+		$rtn->type = "SELECT";
+		//echo"<pre>";var_dump($rtn);echo"</pre>";
+		return $rtn;		
 	}
 	
 	function Update(UpdateQuery $query) : QueryResult

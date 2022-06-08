@@ -10,7 +10,7 @@
 
 // Relies on the controller system to be present: The controller contains the 
 //   database interface.
-require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller2.php";
 
 /*
 // This will import any data object from the database.
@@ -314,57 +314,63 @@ class DataModel
 		
 		if ($is_checked_out === null)
 		{
-			$r1 = $db->SelectFromTable("items",array("ID","ShortName"));
-			if ($r1 == null) return null;
-			return $r1["data"];
-		} else {
-			// TODO: Perhaps a better DB driver object, for readability...
-			
-			$coval = ($is_checked_out) ? DMAssignment::STATUS_CHECKEDOUT : DMAssignment::STATUS_RETURNED;
-			
-			$r1 = $db->SelectFromTable("audit_entries",array("ItemID", "max(AssignedWhen) as LastAssigned"),array(),"","ItemID");
-			//var_dump ($r1);
-			if ($r1 == null) return null;			
-
-			// Pretend result that merges everything.
-			$rx = array("query" => "",
-						"columns" => array("ID", "ShortName"),
-						"data" => array());
-
-			foreach ($r1["data"] as $datarow)
-			{
-				$r2 = $db->SelectFromMultipleTables( array(
-														"audit_entries" => array(
-															"AssignedWhen",
-															"AssignedBy",
-															"AssignedTo"
-														),		
- 													    "items" => array(
-															"ID",
-															"ShortName"
-														)
-													),
-													array (
-														"items.ID" => "audit_entries.ItemID"
-													),
-													array (
-														"items.ID = {$datarow['ItemID']}",
-														"audit_entries.AssignedWhen={$datarow['LastAssigned']}",
-														"audit_entries.NewStatus={$coval}"
-													)
-				);
-				//var_dump($r2);
-				if ($r2 == null) return null;
-				$rx["query"] .= "{$r2['query']};\n";
-				if (count($r2["data"]) == 0) continue;
-				$rx["data"][] = $r2["data"][0];
+			$q = new SelectQuery;
+			$q->fields = array("ID","ShortName");
+			$q->tables = array("items");
+			$r1 = $db->Select($q);
+			if ($r1->success == false){
+				return null;
 			}
-			//var_dump($rx);
-			return $rx["data"];
+			return $r1->data;
+		} else {
+			$coval = ($is_checked_out) ? DMAssignment::STATUS_CHECKEDOUT : DMAssignment::STATUS_RETURNED;
+						
+			$q = new SelectQuery;
+			$q->fields = array("ItemID","max(AssignedWhen) as LastAssigned");
+			$q->tables = array("audit_entries");
+			$q->groupby["field"] = "ItemID";
+			$r1 = $db->Select($q);
+			
+			if ($r1->success == false){
+				return null;
+			}
+
+			$rx = new QueryResult;
+
+			foreach ($r1->data as $datarow)
+			{
+				$q2 = new SelectQuery;
+				$q2->fields = array("audit_entries.AssignedWhen","audit_entries.AssignedBy","audit_entries.AssignedTo","items.ID","items.ShortName");
+				$q2->tables = array("audit_entries", "items");
+				$q2->keyrelationships = array("items.ID" => "audit_entries.ItemID");
+				$q2->where = array("items.ID = {$datarow['ItemID']}", "audit_entries.AssignedWhen={$datarow['LastAssigned']}", "audit_entries.NewStatus={$coval}");
+				$r2 = $db->Select($q2);
+				if ($r2->success == false){
+					return null;
+				}	
+				$rx->query .= "{$r2->query};\n";
+				if (count($r2->data) == 0) continue;
+				$rx->data[] = $r2->data[0];
+			}
+			return $rx->data;
 		}
 	}
-	function get_entity_name($entityid)
+
+	function get_entity_name($entityid) : String
 	{
+		global $db;
+		
+		$q = new SelectQuery;
+		$q->fields = array("FullName");
+		$q->tables = array("entities");
+		$q->where = array("ID = {$entityid}");
+		$q->limit["quantity"] = 1;
+		$r = $db->Select($q);
+		if (!$r->success) return "#ERR#";
+		if (count($r->data) == 1)
+			return $r->data[0]["FullName"];
+		else
+			return "???";
 	}
 }
 

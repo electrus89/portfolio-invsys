@@ -1,7 +1,7 @@
 <?php
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../../conf/app.conf.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view.php";
-require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller2.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/model.php";
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view/kiosk.php";
 
@@ -29,7 +29,7 @@ foreach (array(	"Checked Out" => true, "Returned" => false ) as $title => $statu
 		<td>#<?=$i["ID"]?>: <?=$i["ShortName"]?></td>
 		<td><?=date("d M Y h:m:s", $i["AssignedWhen"])?></td>
 		<td><?php if ($i["AssignedTo"] == -1) {echo "None";} else { echo "{$i['AssignedTo']}: ???";}?></td>
-		<td>#<?=$i["AssignedBy"]?>: ???</td>
+		<td>#<?=$i["AssignedBy"]?>: <?=DataModel::get_entity_name($i["AssignedBy"])?></td>
 	</tr><?php } ?>
 </table><?php
 }

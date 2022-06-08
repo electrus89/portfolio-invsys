@@ -2,7 +2,7 @@
 // Selection of the colorways requires this.
 require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/view.php";
 // Connection to database and Selection of Driver requires this.
-require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller.php";
+require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller2.php";
 
 ?><?php
 
@@ -18,19 +18,19 @@ $colorway_kiosk = Colorways::$Orange;
 //		Database Driver selection.
 // $db->Connect ( <location of server>, <username>, <password> )
 //		Database Connection configuration.
-$db = new MySQLDriver("/var/run/mysqld/mysqld.sock", "invsys", "password");
+//$db = new MySQLDriver("/var/run/mysqld/mysqld.sock", "invsys", "password");
 
-/* 
+ 
 $dbconfig = array (
 					"mysql" => array ("conntype" => "socket",
-									  "socket" = > "/var/run/mysqld/mysqld.sock",
-									  "user" => "invsys",
+									  "socket" => "/var/run/mysqld/mysqld.sock",
+									  "username" => "invsys",
 									  "password" => "password",
 									  "database" => "invsys")
 );
 
 $db = new MySQLDatabase($dbconfig); 
-*/
+
 // $passseed = Password Seed for Salts of Passwords in the Database [Salts are per-EntityID]
 // $passul = Upper limit value for salts, after which it wraps around.
 $passseed = 12093809;
