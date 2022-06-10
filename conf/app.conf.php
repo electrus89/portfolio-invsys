@@ -14,12 +14,7 @@ require_once "{$_SERVER['DOCUMENT_ROOT']}/../application/controller2.php";
 $colorway_backoffice = Colorways::$Black;
 $colorway_kiosk = Colorways::$Orange;
 
-// $db
-//		Database Driver selection.
-// $db->Connect ( <location of server>, <username>, <password> )
-//		Database Connection configuration.
-//$db = new MySQLDriver("/var/run/mysqld/mysqld.sock", "invsys", "password");
-
+//		Database Driver selection and connection
  
 $dbconfig = array (
 					"mysql" => array ("conntype" => "socket",
