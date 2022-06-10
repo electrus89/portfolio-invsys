@@ -252,14 +252,18 @@ class DataModel
 	{
 		global $db;
 		
-		// Does a user have both an credential of a matching type and a matching username?
-		$r1 = $db->SelectFromMultipleTables( array(	"entity_to_user" => array(),
-													"credentials" => array("UserID")),
-											 array( "entity_to_user.ID" => "credentials.UserID"),
-											 array( "entity_to_user.Username = \"{$username}\"",
-													"credentials.CredType = {$credential['type']}"));
+		$q1 = new SelectQuery;
+		$q1->tables 			= array("entity_to_user",
+										"credentials");
+		$q1->fields 			= array("credentials.UserID");
+		$q1->keyrelationships 	= array("entity_to_user.ID" => "credentials.UserID");
+		$q1->where				= array("entity_to_user.Username = \"{$username}\"",
+										"credentials.CredType = {$credential['type']}");
 		
-		if ($r1 == null) return null; // If there's an issue, return a negative result, meaning login failure.
+		// Does a user have both an credential of a matching type and a matching username?
+		$r1 = $db->Select($q1);
+		
+		if ($r1->success == false) return null; // If there's an issue, return a negative result, meaning login failure.
 		
 		$serializer = "";
 		// Form the serializer for the credential.
@@ -271,21 +275,40 @@ class DataModel
 				$serializer = "PASSWORD('{$salt}#{$credential['data']}')";
 		}
 		
-		$r2 = $db->SelectFromMultipleTables(array( "entity_to_user" => array("ID", "EntityID", "Username"), // Select the five relevant fields in three tables...
-											 "credentials" => array(),
-											 "entities" => array()),								  // No fields selected but we should still INNER JOIN this one.
-									  array( "entities.ID" => "entity_to_user.EntityID",			  // Two primary keys bind these three tables.
-									         "entity_to_user.ID" => "credentials.UserID"),
-									  array("entity_to_user.Username = \"{$username}\"",
-										    "credentials.Credential = {$serializer}",
-											"credentials.CredType = {$credential['type']}"));		
-		if ($r2 == null) return null; // If there's an issue, return a negative result, meaning login failure.
-		return array( "EntityID" => $r2["data"][0]["EntityID"],
-					  "Username" => $r2["data"][0]["Username"],
-					  "UserID" =>   $r2["data"][0]["ID"] );
+		$q2 = new SelectQuery;
+		$q2->fields = array("ID", 
+						    "EntityID", 
+							"Username");
+		$q2->tables = array("entity_to_user",
+							"credentials",
+							"entities");
+		$q2->keyrelationships = array("entities.ID" => "entity_to_user.EntityID",
+								"entity_to_user.ID" => "credentials.UserID");
+		$q2->where = array( "entity_to_user.Username = \"{$username}\"",
+							"credentials.Credential = {$serializer}",
+							"credentials.CredType = {$credential['type']}");
+		$q2->limit["quantity"] = 1;
+		if ($r2->success == false) return null; // If there's an issue, return a negative result, meaning login failure.
+		if (count($r2->data) == 0) return null; // The user wasn't found.
+		return array( "EntityID" => $r2->data[0]["EntityID"],
+					  "Username" => $r2->data[0]["Username"],
+					  "UserID" =>   $r2->data[0]["ID"] );
 	}
 	static function checkout_item($username, $credential, $entitytoid, $itemid) : ?Array
 	{
+		$authres = authenticate_entity($username, credential);
+		if ($authres == null) return null;
+		
+		$entitybyid = $authres["EntityID"];
+		
+		$q = new InsertQuery;
+		$q->tables = array("audit_entries");
+		$q->fields = array("AssignedWhen" => time(),
+						   "AssignedTo"   => $entitytoid,
+						   "AssignedBy" => $entitybyid,
+						   "NewStatus" => DMAssignment::STATUS_CHECKEDOUT,
+						   "ItemID" => $itemid);
+		
 	}
 
 	static function list_entities_by_classification() : ?Array
@@ -343,12 +366,16 @@ class DataModel
 			foreach ($r1->data as $datarow)
 			{
 				$q2 = new SelectQuery;
-				$q2->fields = array("audit_entries.AssignedWhen","audit_entries.AssignedBy","audit_entries.AssignedTo","items.ID","items.ShortName");
-				$q2->tables = array("audit_entries", "items");
+				$q2->fields = array("audit_entries.AssignedWhen",
+									"audit_entries.AssignedBy",
+									"audit_entries.AssignedTo",
+									"items.ID",
+									"items.ShortName");
+				$q2->tables = array("audit_entries", 
+									"items");
 				$q2->keyrelationships = array("items.ID" => "audit_entries.ItemID");
 				$q2->where = array("items.ID = {$datarow['ItemID']}", "audit_entries.AssignedWhen={$datarow['LastAssigned']}", "audit_entries.NewStatus={$coval}");
 				$r2 = $db->Select($q2);
-				//var_dump((String)$q2);
 				if ($r2->success == false){
 					return null;
 				}	

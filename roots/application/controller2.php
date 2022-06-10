@@ -15,6 +15,35 @@ class QueryResult
 	public $data;				// For select queries, the data selected.
 }
 
+class UpdateQuery
+{
+	public $fields = array();
+	public $tables = array();
+	public $where = array();
+	public $limit = array("quantity" => -1);
+	public function __toString()
+	{
+		$fldsets = array();
+		foreach ($fields as $key => $val)
+		{
+			$fldsets[] = implode("=",array($key,$val));
+		}
+		$setpairs = implode(",",$fldsets);
+		$tables = implode(" INNER JOIN ", $this->tables);
+		if (count($this->where) != 0) {
+			$where = " WHERE ".implode(" AND ", $this->where);
+		} else {
+			$where = "";
+		}
+		if ($this->limit["quantity"] > -1) {
+			$limit = " LIMIT {$this->limit['quantity']} OFFSET {$this->limit['offset']}";
+		} else {
+			$limit = "";
+		}
+		return "UPDATE {$tables} SET {$setpairs}{$where}{$limit}";
+	}
+}
+
 class SelectQuery
 {
 	public $fields = array();
@@ -93,19 +122,26 @@ class MySQLDatabase extends Database
 		$result = $this->conn->query($query);
 		$rtn = new QueryResult;
 		if ($this->conn->errno != 0) {
-			//echo"<pre>";var_dump((String)$query);var_dump($rtn);echo"</pre>";
 			return $rtn;
 		}
 		$rtn->success = true;
 		$rtn->query = (String)$query;
 		$rtn->data = $result->fetch_all(MYSQLI_ASSOC);
 		$rtn->type = "SELECT";
-		//echo"<pre>";var_dump($rtn);echo"</pre>";
 		return $rtn;		
 	}
 	
 	function Update(UpdateQuery $query) : QueryResult
 	{
+		$result = $this->conn->query($query);
+		$rtn = new QueryResult;
+		if ($this->conn->errno != 0) {
+			return $rtn;
+		}
+		$rtn->success = true;
+		$rtn->query = (String)$query;
+		$rtn->type = "UPDATE";
+		return $rtn;
 	}
 	
 	function Insert(InsertQuery $query) : QueryResult
