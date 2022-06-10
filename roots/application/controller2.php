@@ -44,6 +44,27 @@ class UpdateQuery
 	}
 }
 
+class InsertQuery
+{
+	public $fields = array();
+	public $table = "";
+	public function __toString()
+	{
+		$keysets = array();
+		$valsets = array();
+		
+		foreach ($fields as $key => $val)
+		{
+			$keysets[] = $key;
+			$valsets[] = $val;
+		}
+		
+		$keys = implode(",",$keysets);
+		$table = $this->table;
+		return "INSERT INTO {$table} ({$keys}) VALUES ({$values})";
+	}
+}
+
 class SelectQuery
 {
 	public $fields = array();
@@ -146,6 +167,15 @@ class MySQLDatabase extends Database
 	
 	function Insert(InsertQuery $query) : QueryResult
 	{
+		$result = $this->conn->query($query);
+		$rtn = new QueryResult;
+		if ($this->conn->errno != 0) {
+			return $rtn;
+		}
+		$rtn->success = true;
+		$rtn->query = (String)$query;
+		$rtn->type = "INSERT";
+		return $rtn;
 	}
 }
 ?>
