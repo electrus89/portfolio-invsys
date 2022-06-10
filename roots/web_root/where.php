@@ -28,7 +28,7 @@ foreach (array(	"Checked Out" => true, "Returned" => false ) as $title => $statu
 	foreach ($ilist as $i) {?><tr>
 		<td>#<?=$i["ID"]?>: <?=$i["ShortName"]?></td>
 		<td><?=date("d M Y h:m:s", $i["AssignedWhen"])?></td>
-		<td><?php if ($i["AssignedTo"] == -1) {echo "None";} else { echo "{$i['AssignedTo']}: ???";}?></td>
+		<td><?php if ($i["AssignedTo"] == -1) {echo "None";} else { echo "{$i['AssignedTo']}: ".DataModel::get_entity_name($i["AssignedTo"]);}?></td>
 		<td>#<?=$i["AssignedBy"]?>: <?=DataModel::get_entity_name($i["AssignedBy"])?></td>
 	</tr><?php } ?>
 </table><?php
