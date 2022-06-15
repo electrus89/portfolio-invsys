@@ -175,7 +175,7 @@ class DataModel
 		}
 	}
 
-	function get_entity_name($entityid) : String
+	static function get_entity_name($entityid) : String
 	{
 		global $db;
 		
@@ -191,8 +191,32 @@ class DataModel
 		else
 			return "???";
 	}
+	
+	static function ensure_current_itemstatus($itemid, $status) : bool
+	{
+		global $db;
+		
+		$q = new SelectQuery;
+		$q->tables = array("audit_entries");
+		$q->fields = array("ItemID", "AssignedWhen", "NewStatus");
+		$q->limit["quantity"] = 1;
+		$q->groupby["field"] = "ItemID";
+		$q->orderby["field"] = "AssignedWhen";
+		$q->orderby["direction"] = "DESC";
+		$q->where = array( "ItemID = {$itemid}" );
+		var_dump ($q);
+		$r = $db->Select($q);
+		var_dump ($r);
+		if (!$r->success) return false;
+		if (count($r->data) == 0) return false;
+		return ($r->data[0]["NewStatus"] == $status);
+	}
 }
-
+echo "<pre>";
+var_dump(DataModel::ensure_current_itemstatus(2, DMAssignment::STATUS_CHECKEDOUT));
+var_dump(DataModel::ensure_current_itemstatus(1, DMAssignment::STATUS_RETURNED));
+var_dump(DataModel::ensure_current_itemstatus(3, DMAssignment::STATUS_RETURNED));
+echo "</pre>";
 class DMSecurity
 {
 	static function CalculatePWSalt($UserID) : int
