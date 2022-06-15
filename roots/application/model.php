@@ -200,7 +200,7 @@ class DataModel
 		$q->tables = array("audit_entries");
 		$q->fields = array("ItemID", "AssignedWhen", "NewStatus");
 		$q->limit["quantity"] = 1;
-		$q->groupby["field"] = "ItemID";
+		//$q->groupby["field"] = "ItemID";
 		$q->orderby["field"] = "AssignedWhen";
 		$q->orderby["direction"] = "DESC";
 		$q->where = array( "ItemID = {$itemid}" );
